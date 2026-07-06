@@ -35,6 +35,11 @@ M.push = function(name, mode, mappings)
   end
 
   M._stack[name] = existing_maps
+
+  for lhs, rhs in pairs(mappings) do
+    -- TODO: need some way to pass options in here
+    vim.keymap.set(mode, lhs, rhs)
+  end
 end
 
 M.pop = function(mode) end

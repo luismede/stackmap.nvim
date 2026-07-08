@@ -1,0 +1,3 @@
+stackmap	stackmap.txt	/*stackmap*
+stackmap.pop()	stackmap.txt	/*stackmap.pop()*
+stackmap.push()	stackmap.txt	/*stackmap.push()*

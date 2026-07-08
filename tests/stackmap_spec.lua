@@ -1,43 +1,85 @@
-local find_map = function(maps, lhs)
-	for _, map in ipairs(maps) do
+local PREFIX = "<Plug>(stackmap-test-)"
+local RHS = "echo 'This is a test!'"
+
+local function find_map(mode, lhs)
+	for _, map in ipairs(vim.api.nvim_get_keymap(mode)) do
 		if map.lhs == lhs then
 			return map
 		end
 	end
 end
 
-describe("mapstack", function()
+local function push_mapping(multiple)
+	local mappings
+
+	if multiple then
+		mappings = {
+			[PREFIX .. "1)"] = RHS .. "1",
+			[PREFIX .. "2)"] = RHS .. "2",
+		}
+	else
+		mappings = {
+			[PREFIX .. "1)"] = RHS,
+		}
+	end
+
+	require("stackmap").push("test", "n", mappings)
+end
+
+describe("stackmap", function()
+	before_each(function()
+		require("stackmap")._clear()
+
+		pcall(vim.keymap.del, "n", PREFIX .. "1)")
+		pcall(vim.keymap.del, "n", PREFIX .. "2)")
+	end)
+
+	after_each(function()
+		require("stackmap")._clear()
+
+		pcall(vim.keymap.del, "n", PREFIX .. "1)")
+		pcall(vim.keymap.del, "n", PREFIX .. "2)")
+	end)
 	it("can be required", function()
-		require("stackmap")
+		assert.not_nil(require("stackmap"))
 	end)
 
 	it("can push a single mapping", function()
-		local rhs = "echo 'This is a test!'"
+		push_mapping(false)
 
-		require("stackmap").push("test1", "n", {
-			asdfg = rhs,
-		})
-
-		local maps = vim.api.nvim_get_keymap("n")
-		local found = find_map(maps, "asdfg")
-
-		assert.are.same(rhs, found.rhs)
+		local found = find_map("n", PREFIX .. "1)")
+		assert.are.same(RHS, found.rhs)
 	end)
 
 	it("can push multiple mappings", function()
-		local rhs = "echo 'This is a test!'"
+		push_mapping(true)
 
-		require("stackmap").push("test2", "n", {
-			["asdf_1"] = rhs .. "1",
-			["asdf_2"] = rhs .. "2",
-		})
+		local found1 = find_map("n", PREFIX .. "1)")
+		local found2 = find_map("n", PREFIX .. "2)")
 
-		local maps = vim.api.nvim_get_keymap("n")
+		assert.are.same(RHS .. "1", found1.rhs)
+		assert.are.same(RHS .. "2", found2.rhs)
+	end)
 
-		local found_1 = find_map(maps, "asdf_1")
-		assert.are.same(rhs .. "1", found_1.rhs)
+	it("removes mappings after pop when no mapping existed before", function()
+		push_mapping(false)
 
-		local found_2 = find_map(maps, "asdf_2")
-		assert.are.same(rhs .. "2", found_2.rhs)
+		assert.not_nil(find_map("n", PREFIX .. "1)"))
+
+		require("stackmap").pop("test")
+
+		assert.is_nil(find_map("n", PREFIX .. "1)"))
+	end)
+
+	it("restores an existing mapping after pop", function()
+		vim.keymap.set("n", PREFIX .. "1)", "echo 'Hello, Joe!'")
+
+		push_mapping(false)
+
+		assert.are.same(RHS, find_map("n", PREFIX .. "1)").rhs)
+
+		require("stackmap").pop("test")
+
+		assert.are.same("echo 'Hello, Joe!'", find_map("n", PREFIX .. "1)").rhs)
 	end)
 end)

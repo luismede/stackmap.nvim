@@ -1,29 +1,36 @@
 -- It's like a Module
 -- M is a table, but used as a Module
+--
 local M = {}
 
-local find_mapping = function(maps, lhs)
-	for _, value in ipairs(maps) do
-		if value.lhs == lhs then
-			return value
-		end
+---@param maps table
+---@return table
+local function map_by_lhs(maps)
+	local indexed = {}
+
+	for _, map in ipairs(maps) do
+		indexed[map.lhs] = map
 	end
 
-	return nil
+	return indexed
 end
 
 M._stack = {}
+
+M._clear = function()
+	M._stack = {}
+end
 
 ---@param name string
 ---@param mode string
 ---@param mappings table
 M.push = function(name, mode, mappings)
-	local maps = vim.api.nvim_get_keymap(mode)
+	local maps = map_by_lhs(vim.api.nvim_get_keymap(mode))
 
 	local existing_maps = {}
 
 	for lhs, _ in pairs(mappings) do
-		local existing = find_mapping(maps, lhs)
+		local existing = maps[lhs]
 		if existing then
 			existing_maps[lhs] = existing
 		end
@@ -46,18 +53,16 @@ M.pop = function(name)
 	local state = M._stack[name]
 	M._stack[name] = nil
 
-	for lhs, rhs in pairs(state.mappings) do
+	for lhs, _ in pairs(state.mappings) do
 		if state.existing[lhs] then
-			-- TODO: Implement logic when maps existing
+			local og_mapping = state.existing[lhs]
+
+			-- TODO: handle the options from the table
+			vim.keymap.set(state.mode, lhs, og_mapping.rhs)
 		else
-			vim.keymap.del(state.mode, lhs, rhs)
+			vim.keymap.del(state.mode, lhs)
 		end
 	end
 end
-
-M.push("debug_mode", "n", {
-	[" h"] = "echo 'Hello'",
-	[" e"] = "echo 'Goodbye'",
-})
 
 return M

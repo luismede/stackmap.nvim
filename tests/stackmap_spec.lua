@@ -33,13 +33,6 @@ describe("stackmap", function()
 		pcall(vim.keymap.del, "n", PREFIX .. "1)")
 		pcall(vim.keymap.del, "n", PREFIX .. "2)")
 	end)
-
-	after_each(function()
-		require("stackmap")._clear()
-
-		pcall(vim.keymap.del, "n", PREFIX .. "1)")
-		pcall(vim.keymap.del, "n", PREFIX .. "2)")
-	end)
 	it("can be required", function()
 		assert.not_nil(require("stackmap"))
 	end)

@@ -17,14 +17,14 @@ end
 
 M._stack = {}
 
-M._clear = function()
+function M._clear()
 	M._stack = {}
 end
 
 ---@param name string
 ---@param mode string
 ---@param mappings table
-M.push = function(name, mode, mappings)
+function M.push(name, mode, mappings)
 	local maps = map_by_lhs(vim.api.nvim_get_keymap(mode))
 
 	local existing_maps = {}
@@ -49,7 +49,7 @@ M.push = function(name, mode, mappings)
 end
 
 ---@param name string
-M.pop = function(name)
+function M.pop(name)
 	local state = M._stack[name]
 	M._stack[name] = nil
 
